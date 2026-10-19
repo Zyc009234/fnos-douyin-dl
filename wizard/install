@@ -1,0 +1,11 @@
+[
+  {
+    "stepTitle": "使用说明",
+    "items": [
+      {
+        "type": "tips",
+        "helpText": "安装后打开「抖音下载」，把页面上的「存到 NAS」按钮拖到电脑浏览器的书签栏。之后在 www.douyin.com 播放视频时点一下书签，视频就会下载到共享目录 DouyinDL/videos。"
+      }
+    ]
+  }
+]

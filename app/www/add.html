@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>发送到 NAS</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body class="popup">
+  <main>
+    <div class="status" id="status">正在发送到 NAS…</div>
+    <div class="card">
+      <div class="title" id="title"></div>
+      <div class="muted" id="author"></div>
+    </div>
+    <div class="row">
+      <a class="btn ghost" href="./" target="_blank">打开下载列表</a>
+      <button class="btn" id="closeBtn">关闭</button>
+    </div>
+  </main>
+<script>
+(async function () {
+  const q = new URLSearchParams(location.search);
+  const info = {
+    url: q.get('url') || '',
+    id: q.get('id') || '',
+    title: q.get('title') || '',
+    author: q.get('author') || '',
+    pageUrl: q.get('page') || '',
+  };
+  document.getElementById('title').textContent = info.title || '（无标题）';
+  document.getElementById('author').textContent = info.author ? '@' + info.author : '';
+  const status = document.getElementById('status');
+  // 电脑上是弹窗，直接关闭；手机上弹窗常被拦截、改为当前页跳转，这时返回抖音页面
+  const isPopup = !!window.opener;
+  const closeBtn = document.getElementById('closeBtn');
+  if (!isPopup) closeBtn.textContent = '返回抖音';
+  closeBtn.onclick = () => (isPopup ? window.close() : history.back());
+  // 从地址栏移除临时视频地址，避免刷新时重复提交
+  history.replaceState(null, '', location.pathname);
+  if (!info.url) {
+    status.textContent = '没有收到视频地址，请回到抖音页面重新点击书签';
+    status.className = 'status err';
+    return;
+  }
+  try {
+    const res = await fetch('api/download', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(info),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '发送失败');
+    status.textContent = data.duplicate ? '这个视频已经在下载列表里了' : '已加入下载队列 ✓';
+    status.className = 'status ok';
+    if (isPopup) setTimeout(() => window.close(), 2500);
+  } catch (e) {
+    status.textContent = '发送失败：' + e.message;
+    status.className = 'status err';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+#!/bin/bash
+# 抖音下载服务的启动 / 停止 / 状态
+
+export PATH=/var/apps/nodejs_v22/target/bin:$PATH
+PID_FILE="$TRIM_PKGVAR/app.pid"
+LOG_FILE="$TRIM_PKGVAR/app.log"
+
+is_running() {
+    [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
+}
+
+case "$1" in
+start)
+    is_running && exit 0
+    if ! command -v node >/dev/null 2>&1; then
+        echo "未找到 Node.js，请先在应用中心安装 Node.js v22。" > "$TRIM_TEMP_LOGFILE"
+        exit 1
+    fi
+    mkdir -p "$TRIM_PKGVAR"
+    # 日志超过 5MB 时轮转
+    if [ -f "$LOG_FILE" ] && [ "$(stat -c %s "$LOG_FILE")" -gt 5242880 ]; then
+        mv -f "$LOG_FILE" "$LOG_FILE.1"
+    fi
+    cd "$TRIM_APPDEST/server" || exit 1
+    nohup node server.js >> "$LOG_FILE" 2>&1 &
+    echo $! > "$PID_FILE"
+    sleep 1
+    if ! is_running; then
+        tail -n 5 "$LOG_FILE" > "$TRIM_TEMP_LOGFILE"
+        exit 1
+    fi
+    exit 0
+    ;;
+stop)
+    if is_running; then
+        kill "$(cat "$PID_FILE")"
+        for _ in 1 2 3 4 5; do
+            is_running || break
+            sleep 1
+        done
+        is_running && kill -9 "$(cat "$PID_FILE")"
+    fi
+    rm -f "$PID_FILE"
+    exit 0
+    ;;
+status)
+    is_running && exit 0
+    exit 3
+    ;;
+*)
+    exit 1
+    ;;
+esac

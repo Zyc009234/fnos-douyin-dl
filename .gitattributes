@@ -1,0 +1,4 @@
+# 这些文件在飞牛（Linux）上执行或解析，必须保持 LF
+* text=auto eol=lf
+*.png binary
+*.PNG binary

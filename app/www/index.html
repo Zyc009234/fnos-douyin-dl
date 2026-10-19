@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>抖音下载</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <img src="static/icon.png" alt="" width="40" height="40">
+    <div>
+      <h1>抖音下载</h1>
+      <div class="muted">在抖音网页版点一下书签，视频就会下载到 NAS</div>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" data-tab="pc" role="tab">💻 电脑</button>
+    <button class="tab" data-tab="mobile" role="tab">📱 手机</button>
+  </div>
+
+  <section class="panel" data-panel="pc">
+    <h2>第一步：安装书签小工具</h2>
+    <p>把下面的按钮<b>拖到浏览器书签栏</b>（书签栏没显示时按 <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>）。</p>
+    <p><a class="btn bookmarklet" id="bm" href="#" onclick="alert('请把这个按钮拖到书签栏，而不是直接点击');return false;">⬇ 存到 NAS</a></p>
+    <details>
+      <summary>拖不动？手动添加书签</summary>
+      <p class="muted">新建一个书签，名称随意，网址粘贴下面的内容：</p>
+      <textarea class="bmText" readonly rows="3"></textarea>
+      <button class="btn ghost small copyBm">复制</button>
+    </details>
+    <h2>第二步：在抖音页面点书签</h2>
+    <p>用电脑浏览器打开 <a href="https://www.douyin.com" target="_blank" rel="noopener">www.douyin.com</a>，播放想要的视频，然后点书签栏里的 <b>存到 NAS</b>。首次使用请允许弹出窗口。</p>
+    <p class="muted">保存位置：<code class="saveDir">…</code></p>
+  </section>
+
+  <section class="panel" data-panel="mobile">
+    <p class="note">请用手机浏览器（Chrome、Edge、Safari 或系统自带浏览器）。抖音、微信、飞牛 App 里的内置浏览器不支持书签。</p>
+    <h2>第一步：添加书签（只需一次）</h2>
+    <ol>
+      <li>点下面的按钮，复制书签代码。</li>
+      <li>在浏览器里随便收藏一个网页（比如本页），然后<b>编辑这个书签</b>：名称改成 <b>存到NAS</b>，网址<b>全部删掉</b>，换成刚复制的代码，保存。</li>
+    </ol>
+    <p><button class="btn copyBm">复制书签代码</button></p>
+    <textarea class="bmText" readonly rows="2"></textarea>
+    <h2>第二步：下载视频</h2>
+    <ol>
+      <li>在抖音 App 里点 <b>分享 → 复制链接</b>。</li>
+      <li>粘贴到下面的框里，点 <b>打开抖音页面</b>（如果提示打开 App，选择取消或留在网页）。</li>
+      <li>页面打开后运行书签：
+        <ul>
+          <li><b>安卓 Chrome / Edge</b>：点地址栏，输入「存到NAS」，点下拉提示里带星标的那一项。</li>
+          <li><b>iPhone Safari</b>：点底部的书签图标，再点「存到NAS」。</li>
+        </ul>
+      </li>
+    </ol>
+    <div class="share-row">
+      <input id="shareText" type="text" placeholder="粘贴抖音分享文案或链接" autocomplete="off">
+      <button class="btn" id="openShare">打开抖音页面</button>
+    </div>
+    <p class="muted">手机分享页播放的视频带水印，书签会自动换成无水印原片再发给 NAS。</p>
+    <p class="muted">保存位置：<code class="saveDir">…</code></p>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>下载任务</h2>
+      <button class="btn ghost small" id="clearTasks">清除已完成</button>
+    </div>
+    <ul class="list" id="tasks"><li class="empty">还没有任务</li></ul>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>已下载的视频</h2>
+      <button class="btn ghost small" id="refreshFiles">刷新</button>
+    </div>
+    <ul class="list" id="files"><li class="empty">还没有视频</li></ul>
+  </section>
+</main>
+
+<dialog id="player"><video controls autoplay playsinline></video><form method="dialog"><button class="btn">关闭</button></form></dialog>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtSize = (n) => !n ? '' : n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : (n / 1024).toFixed(0) + ' KB';
+const fmtTime = (t) => new Date(t).toLocaleString('zh-CN', { hour12: false });
+
+// 生成书签：把源码和当前访问 NAS 的地址拼成 javascript: 链接。
+// 地址取当前页面所在目录，兼容直连端口（http://ip:8866）和飞牛 CGI 入口（.../index.cgi/）。
+fetch('static/bookmarklet.js').then((r) => r.text()).then((src) => {
+  const base = new URL('.', location.href).href.replace(/\/$/, '');
+  const code = '(' + src.slice(src.indexOf('function')) + ')(' + JSON.stringify(base) + ');void 0';
+  const href = 'javascript:' + encodeURIComponent(code);
+  $('#bm').href = href;
+  document.querySelectorAll('.bmText').forEach((t) => { t.value = href; });
+});
+document.querySelectorAll('.copyBm').forEach((btn) => {
+  btn.onclick = async () => {
+    const ta = btn.parentElement.parentElement.querySelector('.bmText');
+    try {
+      await navigator.clipboard.writeText(ta.value);
+    } catch (e) {
+      // 非 https 页面没有 clipboard API，退回到选中复制
+      ta.select();
+      document.execCommand('copy');
+    }
+    const old = btn.textContent;
+    btn.textContent = '已复制 ✓';
+    setTimeout(() => { btn.textContent = old; }, 2000);
+  };
+});
+
+// 电脑 / 手机说明切换，默认按设备选择，记住上次选择
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('[data-panel]').forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  try { localStorage.setItem('tab', name); } catch (e) {}
+}
+document.querySelectorAll('.tab').forEach((t) => { t.onclick = () => showTab(t.dataset.tab); });
+let savedTab = null;
+try { savedTab = localStorage.getItem('tab'); } catch (e) {}
+showTab(savedTab || (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? 'mobile' : 'pc'));
+
+// 从分享文案里提取抖音链接并打开
+$('#openShare').onclick = () => {
+  const m = $('#shareText').value.match(/https?:\/\/[^\s一-龥，。！]*douyin\.com[^\s一-龥，。！]*/);
+  if (!m) { alert('没有找到抖音链接，请粘贴从抖音 App「分享 → 复制链接」得到的内容'); return; }
+  window.open(m[0], '_blank') || (location.href = m[0]);
+};
+
+const STATUS = { queued: '排队中', downloading: '下载中', done: '完成', error: '失败' };
+let lastDone = -1;
+
+async function loadTasks() {
+  try {
+    const data = await (await fetch('api/tasks')).json();
+    document.querySelectorAll('.saveDir').forEach((e) => { e.textContent = data.saveDir; });
+    const ul = $('#tasks');
+    if (!data.tasks.length) { ul.innerHTML = '<li class="empty">还没有任务</li>'; return; }
+    ul.innerHTML = data.tasks.map((t) => {
+      const pct = t.total ? Math.floor(t.received / t.total * 100) : 0;
+      const sub = t.status === 'downloading'
+        ? (t.total ? `${pct}% · ${fmtSize(t.received)} / ${fmtSize(t.total)}` : fmtSize(t.received))
+        : t.status === 'error' ? esc(t.error) : t.status === 'done' ? esc(t.file) : '';
+      return `<li>
+        <div class="main">
+          <div class="title">${esc(t.title)}</div>
+          <div class="muted">${t.author ? '@' + esc(t.author) + ' · ' : ''}${fmtTime(t.createdAt)}${sub ? ' · ' + sub : ''}</div>
+          ${t.status === 'downloading' ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}
+        </div>
+        <span class="tag ${t.status}">${STATUS[t.status] || t.status}</span>
+      </li>`;
+    }).join('');
+    const done = data.tasks.filter((t) => t.status === 'done').length;
+    if (done !== lastDone) { lastDone = done; loadFiles(); }
+  } catch (e) { /* 服务重启时忽略 */ }
+}
+
+async function loadFiles() {
+  const data = await (await fetch('api/files')).json();
+  const ul = $('#files');
+  if (!data.files.length) { ul.innerHTML = '<li class="empty">还没有视频</li>'; return; }
+  ul.innerHTML = data.files.map((f) => {
+    const href = 'files/' + encodeURIComponent(f.name);
+    return `<li>
+      <div class="main">
+        <div class="title">${esc(f.name)}</div>
+        <div class="muted">${fmtSize(f.size)} · ${fmtTime(f.mtime)}</div>
+      </div>
+      <div class="actions">
+        <button class="btn ghost small" data-play="${esc(href)}">播放</button>
+        <a class="btn ghost small" href="${esc(href)}" download="${esc(f.name)}">下载</a>
+        <button class="btn ghost small danger" data-del="${esc(href)}">删除</button>
+      </div>
+    </li>`;
+  }).join('');
+}
+
+$('#files').addEventListener('click', async (e) => {
+  const play = e.target.dataset.play, del = e.target.dataset.del;
+  if (play) {
+    const dlg = $('#player');
+    dlg.querySelector('video').src = play;
+    dlg.showModal();
+  }
+  if (del && confirm('确定删除这个视频文件？')) {
+    await fetch(del, { method: 'DELETE' });
+    loadFiles();
+  }
+});
+$('#player').addEventListener('close', () => { const v = $('#player video'); v.pause(); v.removeAttribute('src'); v.load(); });
+$('#refreshFiles').onclick = loadFiles;
+$('#clearTasks').onclick = async () => { await fetch('api/tasks/clear', { method: 'POST' }); loadTasks(); };
+
+loadTasks();
+loadFiles();
+setInterval(loadTasks, 1500);
+</script>
+</body>
+</html>

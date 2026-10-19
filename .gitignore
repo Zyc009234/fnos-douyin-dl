@@ -1,0 +1,6 @@
+# 打包产物（发布在 GitHub Release）
+*.fpk
+# 本地调试数据
+var/
+videos/
+node_modules/
