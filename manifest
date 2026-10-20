@@ -1,5 +1,5 @@
 appname=DouyinDL
-version=1.0.4
+version=1.0.5
 display_name=抖音下载
 desc=配合浏览器书签小工具，在抖音网页版点一下即可把当前视频（无水印）下载到 NAS 共享目录。
 source=thirdparty
@@ -12,5 +12,4 @@ desktop_applaunchname=DouyinDL.Application
 service_port=8866
 checkport=true
 ctl_stop=true
-disable_authorization_path=true
-changelog=修复：抖音网页版推荐流改用 blob 播放后书签提示「没有找到可下载的视频」，现在会自动通过作品 ID 获取无水印地址。
+changelog=新增分享链接下载：iPhone 在抖音里分享给快捷指令「存到NAS」即可下载，管理页可直接粘贴链接下载（需要 NAS 上安装 Chromium）；保存位置可以自定义。

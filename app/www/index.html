@@ -12,9 +12,18 @@
     <img src="static/icon.png" alt="" width="40" height="40">
     <div>
       <h1>抖音下载</h1>
-      <div class="muted">在抖音网页版点一下书签，视频就会下载到 NAS</div>
+      <div class="muted">分享抖音链接或在网页版点一下书签，无水印视频就会下载到 NAS</div>
     </div>
   </header>
+
+  <section class="panel">
+    <h2>粘贴链接下载</h2>
+    <div class="share-row">
+      <input id="shareText" type="text" placeholder="粘贴抖音分享文案或链接" autocomplete="off">
+      <button class="btn" id="shareBtn">下载到 NAS</button>
+    </div>
+    <p class="muted" id="shareMsg">在抖音 App 里点「分享 → 复制链接」，粘贴到这里，NAS 会自动解析并下载无水印原片。</p>
+  </section>
 
   <div class="tabs" role="tablist">
     <button class="tab" data-tab="pc" role="tab">💻 电脑</button>
@@ -37,30 +46,27 @@
   </section>
 
   <section class="panel" data-panel="mobile">
-    <p class="note">请用手机浏览器（Chrome、Edge、Safari 或系统自带浏览器）。抖音、微信、飞牛 App 里的内置浏览器不支持书签。</p>
-    <h2>第一步：添加书签（只需一次）</h2>
+    <p class="note warn" id="noChromium" hidden>NAS 上还没有安装 Chromium，暂时不能用分享链接下载。请用 SSH 登录飞牛执行 <code>sudo apt install chromium</code>，装好后刷新本页。</p>
+    <h2>iPhone：在抖音里分享给「存到NAS」</h2>
+    <p class="muted">需要手机和 NAS 在同一个局域网（比如连着家里的 Wi-Fi）。</p>
+    <h3>添加快捷指令（只需一次）</h3>
     <ol>
-      <li>点下面的按钮，复制书签代码。</li>
-      <li>在浏览器里随便收藏一个网页（比如本页），然后<b>编辑这个书签</b>：名称改成 <b>存到NAS</b>，网址<b>全部删掉</b>，换成刚复制的代码，保存。</li>
-    </ol>
-    <p><button class="btn copyBm">复制书签代码</button></p>
-    <textarea class="bmText" readonly rows="2"></textarea>
-    <h2>第二步：下载视频</h2>
-    <ol>
-      <li>在抖音 App 里点 <b>分享 → 复制链接</b>。</li>
-      <li>粘贴到下面的框里，点 <b>打开抖音页面</b>（如果提示打开 App，选择取消或留在网页）。</li>
-      <li>页面打开后运行书签：
-        <ul>
-          <li><b>安卓 Chrome / Edge</b>：点地址栏，输入「存到NAS」，点下拉提示里带星标的那一项。</li>
-          <li><b>iPhone Safari</b>：点底部的书签图标，再点「存到NAS」。</li>
-        </ul>
+      <li>打开「快捷指令」App，点右上角 <b>+</b> 新建。</li>
+      <li>点底部的 <b>ⓘ</b>（详细信息），打开 <b>在共享表单中显示</b>，点完成。回到编辑页，把顶部「如果没有输入」改为 <b>获取剪贴板</b>。</li>
+      <li>添加操作 <b>获取 URL 内容</b>，网址填下面的地址；点「显示更多」，方法选 <b>POST</b>，请求体选 <b>JSON</b>，添加一个「文本」字段：键填 <b>text</b>，值选 <b>快捷指令输入</b>。
+        <div class="share-row"><input class="shareUrl" type="text" readonly value="…"><button class="btn ghost small copyUrl">复制地址</button></div>
       </li>
+      <li>添加操作 <b>显示通知</b>，内容选 <b>URL 的内容</b>。</li>
+      <li>把名称改成 <b>存到NAS</b>，点完成。</li>
     </ol>
-    <div class="share-row">
-      <input id="shareText" type="text" placeholder="粘贴抖音分享文案或链接" autocomplete="off">
-      <button class="btn" id="openShare">打开抖音页面</button>
-    </div>
-    <p class="muted">手机分享页播放的视频带水印，书签会自动换成无水印原片再发给 NAS。</p>
+    <h3>下载视频</h3>
+    <ul>
+      <li>在抖音 App 里点 <b>分享</b>，在分享面板里找到 <b>更多</b>（系统分享），选 <b>存到NAS</b>。</li>
+      <li>分享面板里没有「更多」时：点 <b>复制链接</b>，再运行「存到NAS」（在快捷指令 App、主屏幕或小组件里都可以），它会自动读取剪贴板。</li>
+    </ul>
+    <p class="muted">几秒后会弹出通知「已加入下载：…」，NAS 在后台下载无水印原片。</p>
+    <h2>安卓及其他设备</h2>
+    <p>在抖音 App 里点 <b>分享 → 复制链接</b>，打开本页，粘贴到上面的「粘贴链接下载」框里，点 <b>下载到 NAS</b>。</p>
     <p class="muted">保存位置：<code class="saveDir">…</code></p>
   </section>
 
@@ -78,6 +84,25 @@
       <button class="btn ghost small" id="refreshFiles">刷新</button>
     </div>
     <ul class="list" id="files"><li class="empty">还没有视频</li></ul>
+  </section>
+
+  <section class="panel" id="settings">
+    <h2>保存位置</h2>
+    <p><code class="saveDir">…</code></p>
+    <div class="chips">
+      <button class="btn" id="pickDirBtn">选择文件夹</button>
+      <button class="btn ghost" id="resetDirBtn">恢复默认</button>
+    </div>
+    <p class="muted" id="saveDirMsg"></p>
+    <p class="muted">如果应用还没有这个文件夹的权限，会跳到飞牛的授权页面确认（需要管理员）。修改只影响之后的下载，已下载的视频还留在原来的位置。</p>
+    <details>
+      <summary>手动填写路径</summary>
+      <div class="share-row">
+        <input id="saveDirInput" type="text" placeholder="例如 /vol1/1000/视频/抖音" autocomplete="off" spellcheck="false">
+        <button class="btn ghost" id="saveDirBtn">保存</button>
+      </div>
+      <p class="muted">需要先在飞牛 <b>系统设置 → 应用 → 抖音下载 → 访问权限</b> 里点「添加」，选择这个文件夹并给读写权限。个人文件夹的路径一般是 <code>/vol1/1000/文件夹名</code>，文件夹不存在时会自动创建。</p>
+    </details>
   </section>
 </main>
 
@@ -98,9 +123,9 @@ fetch('static/bookmarklet.js').then((r) => r.text()).then((src) => {
   $('#bm').href = href;
   document.querySelectorAll('.bmText').forEach((t) => { t.value = href; });
 });
-document.querySelectorAll('.copyBm').forEach((btn) => {
+document.querySelectorAll('.copyBm, .copyUrl').forEach((btn) => {
   btn.onclick = async () => {
-    const ta = btn.parentElement.parentElement.querySelector('.bmText');
+    const ta = btn.parentElement.querySelector('.shareUrl') || btn.parentElement.parentElement.querySelector('.bmText');
     try {
       await navigator.clipboard.writeText(ta.value);
     } catch (e) {
@@ -125,20 +150,43 @@ let savedTab = null;
 try { savedTab = localStorage.getItem('tab'); } catch (e) {}
 showTab(savedTab || (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? 'mobile' : 'pc'));
 
-// 从分享文案里提取抖音链接并打开
-$('#openShare').onclick = () => {
-  const m = $('#shareText').value.match(/https?:\/\/[^\s一-龥，。！]*douyin\.com[^\s一-龥，。！]*/);
-  if (!m) { alert('没有找到抖音链接，请粘贴从抖音 App「分享 → 复制链接」得到的内容'); return; }
-  window.open(m[0], '_blank') || (location.href = m[0]);
+// 粘贴分享链接，由 NAS 解析并下载
+$('#shareBtn').onclick = async () => {
+  const text = $('#shareText').value.trim();
+  if (!text) { $('#shareText').focus(); return; }
+  const btn = $('#shareBtn');
+  const msg = $('#shareMsg');
+  btn.disabled = true;
+  msg.className = 'muted';
+  msg.textContent = '正在解析，大约需要几秒…';
+  setTimeout(loadTasks, 300);
+  try {
+    const data = await (await fetch('api/share?json=1', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })).json();
+    msg.textContent = data.message;
+    msg.className = data.ok ? 'msg-ok' : 'msg-err';
+    if (data.ok) $('#shareText').value = '';
+  } catch (e) {
+    msg.textContent = '发送失败：' + e.message;
+    msg.className = 'msg-err';
+  }
+  btn.disabled = false;
+  loadTasks();
 };
+$('#shareText').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#shareBtn').click(); });
 
-const STATUS = { queued: '排队中', downloading: '下载中', done: '完成', error: '失败' };
+const STATUS = { resolving: '解析中', queued: '排队中', downloading: '下载中', done: '完成', error: '失败' };
 let lastDone = -1;
 
 async function loadTasks() {
   try {
     const data = await (await fetch('api/tasks')).json();
     document.querySelectorAll('.saveDir').forEach((e) => { e.textContent = data.saveDir; });
+    document.querySelectorAll('.shareUrl').forEach((e) => { e.value = (data.shareUrls || [])[0] || '没有找到 NAS 的局域网地址'; });
+    $('#noChromium').hidden = data.chromium !== false;
     const ul = $('#tasks');
     if (!data.tasks.length) { ul.innerHTML = '<li class="empty">还没有任务</li>'; return; }
     ul.innerHTML = data.tasks.map((t) => {
@@ -163,6 +211,7 @@ async function loadTasks() {
 async function loadFiles() {
   const data = await (await fetch('api/files')).json();
   const ul = $('#files');
+  if (data.error) { ul.innerHTML = `<li class="empty msg-err">${esc(data.error)}</li>`; return; }
   if (!data.files.length) { ul.innerHTML = '<li class="empty">还没有视频</li>'; return; }
   ul.innerHTML = data.files.map((f) => {
     const href = 'files/' + encodeURIComponent(f.name);
@@ -196,6 +245,92 @@ $('#player').addEventListener('close', () => { const v = $('#player video'); v.p
 $('#refreshFiles').onclick = loadFiles;
 $('#clearTasks').onclick = async () => { await fetch('api/tasks/clear', { method: 'POST' }); loadTasks(); };
 
+// 保存位置：借助飞牛的 App Auth 跳转页面（同 @trimjs/web-app 的 openAppAuth）选择文件夹。
+// 1. pick-file 只负责选文件夹（已授权的文件夹也能选）；
+// 2. 保存时服务端实际写入检查，没有权限再跳 authorize-shared-file，由管理员确认后授权读写，跳回后再保存。
+// pick-user-file 走的是「普通用户授权」，默认关闭，所以不用它。
+const PICK_KEY = 'douyindl-pick';
+function renderSettings(s) {
+  $('#saveDirInput').value = s.saveDir;
+  $('#resetDirBtn').hidden = s.saveDir === s.defaultDir;
+  document.querySelectorAll('.saveDir').forEach((e) => { e.textContent = s.saveDir; });
+}
+async function loadSettings() {
+  try { renderSettings(await (await fetch('api/settings')).json()); } catch (e) {}
+}
+function showDirMsg(ok, text) {
+  const msg = $('#saveDirMsg');
+  msg.className = ok === null ? 'muted' : ok ? 'msg-ok' : 'msg-err';
+  msg.textContent = text;
+}
+// 只有通过飞牛入口（/cgi/…）打开时，页面和飞牛同源，才能跳转到飞牛的选择页
+const viaFnos = location.pathname.includes('/cgi/ThirdParty/');
+function gotoAppAuth(route, params, pending) {
+  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  try { sessionStorage.setItem(PICK_KEY, JSON.stringify({ ...pending, state })); } catch (e) {}
+  const u = new URL('/app-auth/' + route, location.origin);
+  u.searchParams.set('appName', 'DouyinDL');
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  u.searchParams.set('redirectUri', location.origin + location.pathname);
+  u.searchParams.set('state', state);
+  location.assign(u.href);
+}
+// authorize：没有写入权限时是否跳去飞牛授权（授权回来后的那次保存不再跳，避免循环）
+async function saveSettings(dir, authorize) {
+  showDirMsg(null, '正在检查文件夹…');
+  try {
+    const res = await fetch('api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ saveDir: dir }),
+    });
+    const data = await res.json();
+    if (data.code === 'no_permission' && authorize && viaFnos) {
+      showDirMsg(null, '这个文件夹还没有授权给本应用，正在打开飞牛的授权页面…');
+      return gotoAppAuth('authorize-shared-file', { path: dir }, { step: 'auth', path: dir });
+    }
+    if (!res.ok) throw new Error(data.error || '保存失败');
+    renderSettings(data);
+    showDirMsg(true, data.saveDir === data.defaultDir ? '已恢复默认保存位置' : '已保存，之后的视频会下载到 ' + data.saveDir);
+    loadFiles();
+  } catch (e) {
+    showDirMsg(false, e.message);
+  }
+}
+$('#pickDirBtn').onclick = () => {
+  if (!viaFnos) {
+    showDirMsg(false, '请从飞牛桌面打开「抖音下载」再选择文件夹；现在打开的是直连端口，只能用下面的「手动填写路径」。');
+    return;
+  }
+  gotoAppAuth('pick-file', { directory: 'true' }, { step: 'pick' });
+};
+// 从飞牛的选择 / 授权页跳回来时处理结果
+(function handleAppAuthCallback() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('status') || !q.has('state')) return;
+  let pending = null;
+  try { pending = JSON.parse(sessionStorage.getItem(PICK_KEY)); sessionStorage.removeItem(PICK_KEY); } catch (e) {}
+  history.replaceState(null, '', location.pathname);
+  $('#settings').scrollIntoView();
+  if (!pending || q.get('state') !== pending.state) return showDirMsg(false, '选择结果校验失败，请重新点「选择文件夹」');
+  const status = q.get('status');
+  if (status === 'cancel') return showDirMsg(null, pending.step === 'auth' ? '已取消授权，保存位置没有修改' : '已取消选择');
+  if (pending.step === 'auth') {
+    if (status !== 'success') {
+      return showDirMsg(false, '授权没有完成。只有管理员可以给应用授权文件夹；也可以在「系统设置 → 应用 → 抖音下载 → 访问权限」里手动添加。');
+    }
+    return saveSettings(pending.path, false);
+  }
+  let paths = [];
+  try { paths = JSON.parse(q.get('path') || '[]'); } catch (e) {}
+  if (status !== 'success' || !paths[0]) return showDirMsg(false, '选择文件夹失败，请重试');
+  saveSettings(paths[0], true);
+})();
+$('#resetDirBtn').onclick = () => saveSettings('', false);
+$('#saveDirBtn').onclick = () => saveSettings($('#saveDirInput').value.trim(), true);
+$('#saveDirInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#saveDirBtn').click(); });
+
+loadSettings();
 loadTasks();
 loadFiles();
 setInterval(loadTasks, 1500);

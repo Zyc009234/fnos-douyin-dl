@@ -160,3 +160,14 @@ dialog form { text-align: right; margin-top: 8px; }
   .list li { flex-wrap: wrap; }
   .actions { width: 100%; justify-content: flex-start; }
 }
+h3 { margin: 14px 0 6px; font-size: 14px; }
+.note.warn { border-left-color: var(--err); }
+.tag.resolving { color: var(--accent); }
+#shareMsg { margin: 0; font-size: 13px; }
+.msg-ok { color: var(--ok); }
+.msg-err { color: var(--err); }
+.btn:disabled { opacity: .6; cursor: wait; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+.chips .btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn.ghost.active { border-color: var(--accent); color: var(--accent); }
+#saveDirMsg:empty { display: none; }
